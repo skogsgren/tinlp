@@ -1,0 +1,19 @@
+[project]
+name = "tinynlp"
+version = "0.0.1"
+authors = [{name="Gustaf Gren", email="gustaf.gren@ling.su.se"},]
+description = "Tiny NLP 'library' for LIS060"
+dependencies = [
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["tinynlp"]
+
