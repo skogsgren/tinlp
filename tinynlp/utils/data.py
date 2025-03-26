@@ -1,9 +1,10 @@
+from csv import DictReader
 from pathlib import Path
 from typing import Iterable
-from csv import DictReader
 
 
 class CategorizedCorpus:
+    # TODO: rewrite as object composition for each type instead
     def __init__(self, data_path: str | Path):
         if isinstance(data_path, str):
             data_path = Path(data_path)
@@ -13,7 +14,7 @@ class CategorizedCorpus:
         elif data_path.suffix == ".tsv":
             self.data = self._process_tsv(data_path)
         else:
-            raise ValueError("Incorrect format provided to CategorizedCorpus")
+            self.data = self._process_plain(data_path)
 
     def _process_subdir_fmt(self, data: Path) -> Iterable[tuple[str, int]]:
         SUBDIR_LABELS = ["neg", "pos"]
@@ -31,9 +32,19 @@ class CategorizedCorpus:
                     yield (f.read().strip(), i)
 
     def _process_tsv(self, data: Path) -> Iterable[tuple[str, int]]:
+        """returns iterator for tsv file with labels"""
         with open(data, newline="") as f:
             for line in DictReader(f, delimiter="\t", fieldnames=["text", "label"]):
                 yield (str(line["text"]), int(line["label"]))
 
+    def _process_plain(self, data: Path) -> Iterable[tuple[str, None]]:
+        """returns iterator for file without labels"""
+        with open(data) as f:
+            for line in f:
+                yield (line.strip(), None)
+
     def __iter__(self):
-        return self.data
+        return self
+
+    def __next__(self):
+        return next(self.data)
