@@ -33,8 +33,6 @@ class NGramModel:
     def p(self, word: str, context: tuple[str]) -> float:
         """returns the probability of a word given its previous context"""
         numerator: float = self.k + self.ngrams[context + (word,)]
-        # in unigram models the denominator is not the previous context but
-        # rather the token size of the corpus (along with the kV smoothing)
         if self.n == 1:
             denominator: float = self.k * len(self.vocab) + self.token_sum
         else:
@@ -45,11 +43,7 @@ class NGramModel:
         """given a sentence as a tuple, return the log prob of that sentence
         given model"""
         context = list(self.get_ngrams(sentence, n=self.n - 1))
-        # we use log first at this step since its at the sum where the
-        # floating point imprecision is starting to become a problem
         prob = [
-            log(self.p(word, context[i]))
-            # we have to add end here since we iterate over the sentence
-            for i, word in enumerate(sentence + self.end)
+            log(self.p(word, context[i])) for i, word in enumerate(sentence + self.end)
         ]
         return sum(prob)

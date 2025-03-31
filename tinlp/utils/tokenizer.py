@@ -1,9 +1,9 @@
-from abc import abstractmethod
-import re
-from pathlib import Path
 import json
-from collections import Counter
 import random
+import re
+from abc import abstractmethod
+from collections import Counter
+from pathlib import Path
 
 from .data import CategorizedCorpus
 
@@ -13,36 +13,22 @@ class Tokenizer:
         self.seed = seed
 
     @abstractmethod
-    def tokenize(self, string: str) -> list[str]:
+    def tokenize(self, inp: str) -> list[str]:
         raise NotImplementedError
 
 
 class RegExTokenizer(Tokenizer):
-    """simple regex tokenizer which makes sure e.g. 'word.' turns into ['word',
-    '.'] or 'it's' turns into ['it', ''s', '.']. I'm using a simplified version
-    of the PENN treebank SED rules:
-    https://web.archive.org/web/20070112180026/https://www.cis.upenn.edu/~treebank/tokenizer.sed"""
+    """very rudimentary regex tokenizer"""
 
-    def tokenize(self, string: str) -> list[str]:
-        final_string = string
-        # TODO: rewrite spec to be more readable, perhaps even at the cost of
-        # performance
-        SPEC = [
-            (r'^"', r"`` "),
-            (r'([ ([{<])"', r"\1 `` "),
-            (r"\.\.\.", r" ... "),
-            (r"[,;:@#$%&]", r" \g<0> "),
-            (r'([^.])([.])([])}>"\']*)\s*$', r"\1 \2\3 "),
-            (r"[?!]", r" \g<0> "),
-            (r"[][(){}<>]", r" \g<0> "),
-            (r"--", r" -- "),
-            (r'"', r" '' "),
-            (r"([^'])' ", r"\1 ' "),
-            (r"  *", r" "),
-        ]
-        for pattern, repl in SPEC:
-            final_string = re.sub(pattern, repl, final_string)
-        return final_string.strip().split()
+    def tokenize(self, inp: str) -> list[str]:
+        return [x.lower() for x in re.findall(r"\w+|[^\w\s]+", inp)]
+
+
+class CharTokenizer(Tokenizer):
+    """almost dummy like tokenizer: just says each character is a token"""
+
+    def tokenize(self, inp: str) -> list[str]:
+        return [x for x in inp if x != " "]
 
 
 class BPETokenizer(Tokenizer):
@@ -83,10 +69,10 @@ class BPETokenizer(Tokenizer):
                 merged.append(text[i])
         return merged
 
-    def tokenize(self, string: str) -> list[str]:
+    def tokenize(self, inp: str) -> list[str]:
         text = [
             c if c in self.vocab else "<unk>"
-            for w in [x + "_" for x in string.split()]
+            for w in [x + "_" for x in inp.split()]
             for c in w
         ]
         for subword in sorted(self.vocab.keys(), key=len):
