@@ -7,11 +7,14 @@ from typing import Any, Iterable
 class CategorizedCorpus:
     # TODO: rewrite as object composition for each type instead
     # TODO: check if first row contains labels first
+    # TODO: URGENT: This class is turning into a mess. do something soon.
     def __init__(self, data_path: str | Path, data_type: None | str = None):
         if isinstance(data_path, str):
             data_path = Path(data_path)
         if data_type == "unimorph":
             self.data = self._process_unimorph(data_path)
+        elif data_type == "conll2003":
+            self.data = self._process_conll_2003(data_path)
         elif data_path.is_dir():
             self.data = self._process_subdir_fmt(data_path)
         elif data_path.suffix == ".tsv":
@@ -53,6 +56,23 @@ class CategorizedCorpus:
         with open(data) as f:
             for line in f:
                 yield (line.strip(), None)
+
+    def _process_conll_2003(
+        self, data: Path
+    ) -> Iterable[tuple[tuple[tuple[str]], tuple[str]]]:
+        with open(data) as f:
+            seq = ([], [])
+            for i, line in enumerate(x.strip().split() for x in f):
+                if i == 0:
+                    continue
+                if not line:
+                    if i == 1:
+                        continue
+                    yield tuple(seq[0]), tuple(seq[1])
+                    seq = ([], [])
+                    continue
+                seq[0].append((line[0], line[1], line[2]))
+                seq[1].append(line[3])
 
     # NOTE: this isn't needed right? Just use the TSV instead and handle labels better
     def _process_unimorph(self, data: Path) -> Iterable[tuple[str, str]]:
