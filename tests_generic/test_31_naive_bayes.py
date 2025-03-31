@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from tinynlp.clf import NaiveBayesClassifier
+from tinlp.clf import NaiveBayesClassifier
+from tinlp.utils.data import get_data_split
 
 DATA = Path("./data/cc_tsv/data.tsv")
 
@@ -23,15 +24,16 @@ TEST_SENTENCES = [
         wouldn’t serve this to someone I owe money to. You know what I did with
         the rest of it? I stared at it for a long time, sighed, and threw it
         directly into the garbage—where it belonged. Never again. Never.
-        Again.""",
+        Again.""".replace("\n", " "),
         0,
     ),
 ]
 
 
 def test_naive_bayes_clf():
-    clf = NaiveBayesClassifier(DATA)
-    clf.fit()
+    X, y = get_data_split(DATA)
+    clf = NaiveBayesClassifier()
+    clf.fit(X, y)
     for sentence, label in TEST_SENTENCES:
         pred = clf.predict(sentence)
         assert label == pred

@@ -2,7 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from tinynlp.utils.tokenizer import BPETokenizer
+from tinlp.utils.tokenizer import BPETokenizer
 
 OUT_FN = Path(tempfile.NamedTemporaryFile(delete=False).name)
 TEST_FN = Path("./data/bpe_test.json")

@@ -2,10 +2,11 @@ from pathlib import Path
 from csv import DictReader
 import json
 
-from tinynlp.utils.data import CategorizedCorpus
+from tinlp.utils.data import CategorizedCorpus
 
 SUBDIR_DATA = Path("data/cc_subdir")
 TSV_DATA = Path("data/cc_tsv/data.tsv")
+CSV_DATA = Path("./data/lang_identification/test.csv")
 
 
 def test_subdir_categorized_corpus():
@@ -19,8 +20,18 @@ def test_subdir_categorized_corpus():
 def test_tsv_categorized_corpus():
     with open(TSV_DATA, newline="") as f:
         EXPECTED = [
-            (str(line["text"]), int(line["label"]))
+            (str(line["text"]), line["label"])
             for line in DictReader(f, delimiter="\t", fieldnames=["text", "label"])
         ]
     y_hat = [x for x in CategorizedCorpus(TSV_DATA)]
+    assert EXPECTED == y_hat
+
+
+def test_unimorph_categorized_corpus():
+    with open(CSV_DATA, newline="") as f:
+        EXPECTED = [
+            (str(line["text"]), line["label"])
+            for line in DictReader(f, fieldnames=["text", "label"])
+        ]
+    y_hat = [x for x in CategorizedCorpus(CSV_DATA)]
     assert EXPECTED == y_hat

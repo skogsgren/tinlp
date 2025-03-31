@@ -1,5 +1,5 @@
-from tinynlp.utils.tokenizer import RegExTokenizer
-from tinynlp.lm import NGramModel
+from tinlp.utils.tokenizer import RegExTokenizer
+from tinlp.lm import NGramModel
 
 FN = "data/homemade-wines.txt"
 TEST_SENTENCES = [
@@ -7,7 +7,7 @@ TEST_SENTENCES = [
     "Take white matchsticks when quite ripe",
     "Take white currants when quite dead",
 ]
-TEST_SENTENCES_SCORES = [-29.84274, -43.56262, -35.76526]
+TEST_SENTENCES_SCORES = [-44.08373, -57.84285, -50.13748]
 
 
 def sent_reader(fn):

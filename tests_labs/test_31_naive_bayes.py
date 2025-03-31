@@ -1,20 +1,24 @@
-from pathlib import Path
+from tinlp.clf import NaiveBayesClassifier
+from tinlp.utils.data import get_data_split
 
-from tinynlp.clf import NaiveBayesClassifier
-
-FILES = [x for x in Path("./data/sentiment_sentences/").iterdir() if x.suffix == ".tsv"]
 LIMITS = {
     "imdb": 71.4 / 100,
     "amazon": 78.4 / 100,
     "yelp": 79.4 / 100,
 }
+FILES = {}
+for k in LIMITS:
+    FILES[k] = (
+        f"./data/sentiment_sentences/{k}-train.tsv",
+        f"./data/sentiment_sentences/{k}-test.tsv",
+    )
 
 
 def test_naive_bayes_clf():
     print()
-    for file in FILES:
-        clf = NaiveBayesClassifier(file)
-        clf.fit()
-        acc: float = clf.eval(file)
-        print(f"{file}\t{acc:.2f} (LIMIT={LIMITS[file.stem]:.2f})")
-        assert acc > LIMITS[file.stem]
+    for domain, (train, test) in FILES.items():
+        clf = NaiveBayesClassifier({"metric": "accuracy"})
+        clf.fit(*get_data_split(train))
+        acc: float = clf.eval(*get_data_split(test))
+        print(f"{acc:.2f} (LIMIT={LIMITS[domain]:.2f})")
+        assert acc >= LIMITS[domain]
