@@ -1,0 +1,34 @@
+·····················
+:  ___         __   :
+:   | .|\ ||  |__)  :
+:   | || \||__|     :
+·····················
+=- Why go big when you can go tinlp? -=
+
+DESCRIPTION
+    TiNLP (TinyNLP) is a _tiny_ framework for various NLP tasks,
+    with NumPy as its sole external dependency.
+
+FEATURES
+    Tokenization: RegEx, BPE
+    Language Models: NGram
+    Classification: Perceptron, Sequence Perceptron, Naive Bayes, NGram
+    Evaluation: Accuracy, F1-score, Cross-fold validation
+
+QUICK START
+    Install it using pip:
+        pip3 install tinlp
+    Then see some examples in the tests_generic folder.
+
+TESTS
+    Testing is done using pytest, which is only installed if you
+    install the package with dev:
+        pip3 install tinlp[dev]
+
+    As this library was created for a university course, there are
+    specific tests inside the tests_labs which are only for that
+    purpoes. These tests also lack the data to run because of
+    licensing. The tests inside tests_generic has the data included.
+
+DEVELOPMENT
+    Clone repo, then pip3 install -e .[dev]
