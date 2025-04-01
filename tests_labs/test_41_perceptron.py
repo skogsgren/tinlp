@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from tinlp.clf import PerceptronClassifier
-from tinlp.utils.data import CategorizedCorpus, get_data_split
+from tinlp.utils.pfex import feat_seq_conll, feat_morph_tag
+from tinlp.utils.data import CorpusCSV, CorpusCONLL2003
 
 UNIMORPH_TRAIN = Path("./data/unimorph/swe-train-5000")
 UNIMORPH_TEST = Path("./data/unimorph/swe-test")
@@ -14,20 +15,27 @@ CONLL2003_TOKEN_ACC_LIMIT = 0.9
 def test_perceptron_morphological_clf():
     print()
     clf = PerceptronClassifier(
+        feature_fn=feat_morph_tag,
         params={
             "metric": "accuracy",
             "epochs": 3,
             "affix_len": 5,
-            "feature_fn": "morph_tag",
             "show_progress": True,
-        }
+        },
     )
-    X, y = get_data_split(UNIMORPH_TRAIN, data_type="unimorph")
-    X, y = [(n,) for n in X], [(n,) for n in y]
+    X, y = CorpusCSV(
+        UNIMORPH_TRAIN,
+        delimiter="\t",
+        fieldnames=["", "text", "label"],
+    ).get_arrays(unsqueeze=True)
     clf.fit(X, y)
 
-    X_test, y_test = get_data_split(UNIMORPH_TEST, data_type="unimorph")
-    score = clf.eval(X_test, [(n,) for n in y_test])
+    X_test, y_test = CorpusCSV(
+        UNIMORPH_TEST,
+        delimiter="\t",
+        fieldnames=["", "text", "label"],
+    ).get_arrays(unsqueeze=True)
+    score = clf.eval(X_test, y_test)
 
     for w, c in clf.weights.most_common(10):
         print(w, c)
@@ -38,21 +46,17 @@ def test_perceptron_morphological_clf():
 def test_perceptron_seq_clf():
     print()
     clf = PerceptronClassifier(
+        feature_fn=feat_seq_conll,
         params={
             "metric": "accuracy",
             "epochs": 3,
-            "feature_fn": "seq_conll",
             "show_progress": True,
-        }
+        },
     )
-    cc = [x for x in CategorizedCorpus(CONLL2003_TRAIN, data_type="conll2003")]
-    X = [i[0] for i in cc]
-    y = [i[1] for i in cc]
+    X, y = CorpusCONLL2003(CONLL2003_TRAIN).get_arrays()
     clf.fit(X, y)
 
-    cc = [x for x in CategorizedCorpus(CONLL2003_TEST, data_type="conll2003")]
-    X_test = [i[0] for i in cc]
-    y_test = [i[1] for i in cc]
+    X_test, y_test = CorpusCONLL2003(CONLL2003_TEST).get_arrays()
     score = clf.eval(X_test, y_test)  # seq accuracy
 
     total = 0
@@ -70,6 +74,3 @@ def test_perceptron_seq_clf():
 
     print(f"TOKEN_ACC={token_acc:.2f}")
     print(f"SEQ_ACC={score:.2f}")
-
-
-print(test_perceptron_seq_clf())

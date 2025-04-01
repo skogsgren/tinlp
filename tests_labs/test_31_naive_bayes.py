@@ -1,5 +1,5 @@
 from tinlp.clf import NaiveBayesClassifier
-from tinlp.utils.data import get_data_split
+from tinlp.utils.data import CorpusCSV
 
 LIMITS = {
     "imdb": 71.4 / 100,
@@ -18,7 +18,7 @@ def test_naive_bayes_clf():
     print()
     for domain, (train, test) in FILES.items():
         clf = NaiveBayesClassifier({"metric": "accuracy"})
-        clf.fit(*get_data_split(train))
-        acc: float = clf.eval(*get_data_split(test))
-        print(f"{acc:.2f} (LIMIT={LIMITS[domain]:.2f})")
+        clf.fit(*CorpusCSV(train, delimiter="\t", label_to_int=True).get_arrays())
+        acc = clf.eval(*CorpusCSV(test, delimiter="\t", label_to_int=True).get_arrays())
+        print(f"{domain}: {acc:.2f} (LIMIT={LIMITS[domain]:.2f})")
         assert acc >= LIMITS[domain]

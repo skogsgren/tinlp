@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections import Counter
 from pathlib import Path
 
-from .data import CategorizedCorpus
+from .data import CorpusPlain
 
 
 class Tokenizer:
@@ -45,6 +45,11 @@ class BPETokenizer(Tokenizer):
         if (not self.model) and (not data):
             raise ValueError("FATAL: must provide model if not providing data.")
         self.data = data
+        if self.data:
+            with open(self.data) as f:
+                self.n_lines = sum([1 for _ in f])
+        else:
+            self.n_lines = 0
 
         if self.model:
             with open(self.model) as f:
@@ -90,22 +95,20 @@ class BPETokenizer(Tokenizer):
 
         # we do random sampling bc we want to keep data in memory for
         # performance, but not entire file if file is large
-        with open(self.data) as f:
-            n_lines = sum(1 for _ in f)
-        if k < n_lines:
+        if k < self.n_lines:
             if self.seed:
                 random.seed(self.seed)
             data = [
                 [c for c in w] + ["_"]
-                for i, x in enumerate(CategorizedCorpus(self.data))
-                if i in random.sample(range(n_lines), k=k)
-                for w in x[0].split()
+                for i, x in enumerate(CorpusPlain(self.data))
+                if i in random.sample(range(self.n_lines), k=k)
+                for w in x.split()
             ]
         else:
             data = [
                 [c for c in w] + ["_"]
-                for x in CategorizedCorpus(self.data)
-                for w in x[0].split()
+                for x in CorpusPlain(self.data)
+                for w in x.split()
             ]
         for line in data:
             for c in line:
@@ -148,6 +151,9 @@ class BPETokenizer(Tokenizer):
 
 def load_tokenizer(name: str | tuple) -> Tokenizer:
     if isinstance(name, tuple):
+        # NOTE: not sure what I did here
+        # NOTE: possibly better just to use declarations instead, i.e.
+        #       instances to pass around
         if name[0].lower() == "bpe":
             return BPETokenizer(name[0], name[1])
     return RegExTokenizer()

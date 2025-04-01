@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from tinlp.clf import NGramClassifier
-from tinlp.utils.data import get_data_split
+from tinlp.utils.data import CorpusCSV
 
 WORD_TRAIN_DATA = Path("./data/cc_tsv/data.tsv")
 WORD_TEST_DATA = Path("./data/cc_tsv/test.tsv")
@@ -21,9 +21,9 @@ def test_ngram_clf_word():
             "metric": "accuracy",
         }
     )
-    X, y = get_data_split(WORD_TRAIN_DATA)
+    X, y = CorpusCSV(WORD_TRAIN_DATA, delimiter="\t").get_arrays()
     clf.fit(X, y)
-    X_test, y_test = get_data_split(WORD_TEST_DATA)
+    X_test, y_test = CorpusCSV(WORD_TEST_DATA, delimiter="\t").get_arrays()
     word_test_acc = clf.eval(X_test, y_test)
     print("NGRAM WORD CLF ACC:", word_test_acc)
     assert word_test_acc == WORD_ACC
@@ -38,9 +38,9 @@ def test_ngram_clf_char():
             "metric": "accuracy",
         }
     )
-    X, y = get_data_split(CHAR_TRAIN_DATA)
+    X, y = CorpusCSV(CHAR_TRAIN_DATA).get_arrays()
     clf.fit(X, y)
-    X_test, y_test = get_data_split(CHAR_TEST_DATA)
+    X_test, y_test = CorpusCSV(CHAR_TEST_DATA).get_arrays()
     char_test_acc = clf.eval(X_test, y_test)
     print("NGRAM CHARACTER CLF ACC:", char_test_acc)
     assert char_test_acc == CHAR_ACC

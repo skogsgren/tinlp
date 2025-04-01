@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from tinlp.clf import NaiveBayesClassifier
-from tinlp.utils.data import get_data_split
+from tinlp.utils.data import CorpusCSV
 
 DATA = Path("./data/cc_tsv/data.tsv")
 
@@ -31,12 +31,9 @@ TEST_SENTENCES = [
 
 
 def test_naive_bayes_clf():
-    X, y = get_data_split(DATA)
+    X, y = CorpusCSV(DATA, label_to_int=True, delimiter="\t").get_arrays()
     clf = NaiveBayesClassifier()
     clf.fit(X, y)
     for sentence, label in TEST_SENTENCES:
         pred = clf.predict(sentence)
         assert label == pred
-
-
-test_naive_bayes_clf()

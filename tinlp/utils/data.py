@@ -1,30 +1,54 @@
-import random
 from csv import DictReader
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Iterable
+from abc import abstractmethod
 
 
-class CategorizedCorpus:
-    # TODO: rewrite as object composition for each type instead
-    # TODO: check if first row contains labels first
-    # TODO: URGENT: This class is turning into a mess. do something soon.
-    def __init__(self, data_path: str | Path, data_type: None | str = None):
+class Corpus:
+    """abstract class for Corpus subclasses"""
+
+    def __init__(self, data_path: str | Path, **params):
         if isinstance(data_path, str):
             data_path = Path(data_path)
-        if data_type == "unimorph":
-            self.data = self._process_unimorph(data_path)
-        elif data_type == "conll2003":
-            self.data = self._process_conll_2003(data_path)
-        elif data_path.is_dir():
-            self.data = self._process_subdir_fmt(data_path)
-        elif data_path.suffix == ".tsv":
-            self.data = self._process_tsv(data_path)
-        elif data_path.suffix == ".csv":
-            self.data = self._process_csv(data_path)
-        else:
-            self.data = self._process_plain(data_path)
+        self.data = self._process(data_path, **params)
 
-    def _process_subdir_fmt(self, data: Path) -> Iterable[tuple[str, int]]:
+    @abstractmethod
+    def _process(self, data: Path, **params):
+        raise NotImplementedError
+
+    def get_arrays(self, unsqueeze: bool = False) -> tuple[list, list]:
+        """returns two lists, X with independent, and y with dependent variables"""
+        data = [x for x in self.data]
+        if unsqueeze:
+            return [(x[0],) for x in data], [(x[1],) for x in data]
+        return [x[0] for x in data], [x[1] for x in data]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.data)
+
+
+class CorpusCSV(Corpus):
+    def _process(self, data: Path, **params):
+        """returns iterator for tsv file with labels"""
+        delim = params.get("delimiter", ",")
+        header = params.get("header", False)
+        with open(data, newline="", encoding="utf-8") as f:
+            if header:
+                raise NotImplementedError
+
+            fieldnames = params.get("fieldnames", ["text", "label"])
+            for line in DictReader(f, delimiter=delim, fieldnames=fieldnames):
+                if params.get("label_to_int", False):
+                    yield (str(line["text"]), int(line["label"]))
+                else:
+                    yield (str(line["text"]), line["label"])
+
+
+class CorpusSubDir(Corpus):
+    def _process(self, data: Path, **params):
         SUBDIR_LABELS = ["neg", "pos"]
         folders = sorted(
             [x for x in data.iterdir() if x.is_dir() and x.name in SUBDIR_LABELS],
@@ -39,27 +63,9 @@ class CategorizedCorpus:
                 with open(file) as f:
                     yield (f.read().strip(), i)
 
-    def _process_csv(self, data: Path) -> Iterable[tuple[str, Any]]:
-        """returns iterator for tsv file with labels"""
-        with open(data, newline="", encoding="utf-8") as f:
-            for line in DictReader(f, fieldnames=["text", "label"]):
-                yield (str(line["text"]), line["label"])
 
-    def _process_tsv(self, data: Path) -> Iterable[tuple[str, Any]]:
-        """returns iterator for tsv file with labels"""
-        with open(data, newline="", encoding="utf-8") as f:
-            for line in DictReader(f, delimiter="\t", fieldnames=["text", "label"]):
-                yield (str(line["text"]), line["label"])
-
-    def _process_plain(self, data: Path) -> Iterable[tuple[str, None]]:
-        """returns iterator for file without labels"""
-        with open(data) as f:
-            for line in f:
-                yield (line.strip(), None)
-
-    def _process_conll_2003(
-        self, data: Path
-    ) -> Iterable[tuple[tuple[tuple[str]], tuple[str]]]:
+class CorpusCONLL2003(Corpus):
+    def _process(self, data: Path, **params):
         with open(data) as f:
             seq = ([], [])
             for i, line in enumerate(x.strip().split() for x in f):
@@ -74,32 +80,10 @@ class CategorizedCorpus:
                 seq[0].append((line[0], line[1], line[2]))
                 seq[1].append(line[3])
 
-    # NOTE: this isn't needed right? Just use the TSV instead and handle labels better
-    def _process_unimorph(self, data: Path) -> Iterable[tuple[str, str]]:
-        """returns iterator for unimorph file"""
+
+class CorpusPlain(Corpus):
+    def _process(self, data: Path, **params) -> Iterable[str]:
+        """returns iterator for file without labels"""
         with open(data) as f:
             for line in f:
-                line = line.strip().split("\t")
-                yield line[1], line[2]
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.data)
-
-
-def get_data_split(
-    data_fn: Path,
-    data_type: None | str = None,
-    shuffle: bool = False,
-    seed: int = 42,
-):
-    data = [x for x in CategorizedCorpus(data_fn, data_type=data_type)]
-    if shuffle:
-        random.seed(seed)
-        random.shuffle(data)
-    try:  # most cases we should have ints as labels
-        return [x[0] for x in data], [int(x[1]) for x in data]
-    except ValueError:  # but we can have strings, so just return it as is
-        return [x[0] for x in data], [x[1] for x in data]
+                yield line.strip()
