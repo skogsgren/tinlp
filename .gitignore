@@ -1,5 +1,9 @@
 *.swp
 *.egg-info/
 __pycache__
+mini-papers/*
+!mini-papers/*.tex
+!mini-papers/*.bib
 tests_labs/data
 pdf
+repo.tar.xz
