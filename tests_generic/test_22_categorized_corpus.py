@@ -26,9 +26,6 @@ def test_subdir_categorized_corpus():
         assert y == y_hat
 
 
-test_subdir_categorized_corpus()
-
-
 def test_tsv_categorized_corpus():
     with open(TSV_DATA, newline="") as f:
         EXPECTED = [
