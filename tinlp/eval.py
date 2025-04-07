@@ -9,25 +9,24 @@ class Metric:
         return sum(y == y_hat for y, y_hat in zip(y, y_hat)) / len(y)
 
     def _f1_score(self, y, y_hat):
-        def f1_class(y, y_hat, class_label):
-            tp = sum(1 for t, p in zip(y, y_hat) if t == p == class_label)
-            fp = sum(
-                1 for t, p in zip(y, y_hat) if t != class_label and p == class_label
-            )
-            fn = sum(
-                1 for t, p in zip(y, y_hat) if t == class_label and p != class_label
-            )
+        unique_labels = sorted(set(y) | set(y_hat))
+        f1_scores = []
 
-            precision = tp / (tp + fp) if (tp + fp) != 0 else 0
-            recall = tp / (tp + fn) if (tp + fn) != 0 else 0
+        for label in unique_labels:
+            tp = sum(t == p == label for t, p in zip(y, y_hat))
+            fp = sum(t != label and p == label for t, p in zip(y, y_hat))
+            fn = sum(t == label and p != label for t, p in zip(y, y_hat))
 
-            return (
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+            f1 = (
                 2 * (precision * recall) / (precision + recall)
-                if (precision + recall) != 0
+                if (precision + recall) > 0
                 else 0
             )
+            f1_scores.append(f1)
 
-        return sum(f1_class(y, y_hat, label) for label in set(y)) / len(set(y))
+        return sum(f1_scores) / len(f1_scores) if f1_scores else 0
 
     def __call__(self, y, y_hat) -> float:
         return self.process(y, y_hat)
