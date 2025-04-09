@@ -1,7 +1,8 @@
+import random
+from abc import abstractmethod
 from csv import DictReader
 from pathlib import Path
 from typing import Iterable
-from abc import abstractmethod
 
 
 class Corpus:
@@ -19,9 +20,29 @@ class Corpus:
     def get_arrays(self, unsqueeze: bool = False) -> tuple[list, list]:
         """returns two lists, X with independent, and y with dependent variables"""
         data = [x for x in self.data]
+        X = [x[0] for x in data]
+        y = [x[1] for x in data]
         if unsqueeze:
-            return [(x[0],) for x in data], [(x[1],) for x in data]
-        return [x[0] for x in data], [x[1] for x in data]
+            X = [(x,) for x in X]
+            y = [(y,) for y in y]
+        return X, y
+
+    def train_test_split(
+        self, test_size: float = 0.2, seed=None, unsqueeze: bool = False
+    ) -> tuple[list, list, list, list]:
+        """returns test/train split: (X_train, X_test, y_train, y_test)"""
+        if seed:
+            random.seed(seed)
+        data = list(zip(*self.get_arrays(unsqueeze=unsqueeze)))
+        n_test = int(len(data) * test_size)
+        random.shuffle(data)
+        X_shuffled, y_shuffled = zip(*data)
+        return (
+            list(X_shuffled[:-n_test]),
+            list(X_shuffled[-n_test:]),
+            list(y_shuffled[:-n_test]),
+            list(y_shuffled[-n_test:]),
+        )
 
     def __iter__(self):
         return self
@@ -36,15 +57,25 @@ class CorpusCSV(Corpus):
         delim = params.get("delimiter", ",")
         header = params.get("header", False)
         with open(data, newline="", encoding="utf-8") as f:
-            if header:
-                raise NotImplementedError
-
             fieldnames = params.get("fieldnames", ["text", "label"])
-            for line in DictReader(f, delimiter=delim, fieldnames=fieldnames):
-                if params.get("label_to_int", False):
-                    yield (str(line["text"]), int(line["label"]))
-                else:
-                    yield (str(line["text"]), line["label"])
+            reader = DictReader(f, delimiter=delim, fieldnames=fieldnames)
+            if header:
+                next(reader)
+            for line in reader:
+                yield self._process_line(line, params)
+
+    def _process_line(self, line: dict, params: dict) -> tuple:
+        if params.get("label_to_int", False):
+            return (str(line["text"]), int(line["label"]))
+        else:
+            return (str(line["text"]), line["label"])
+
+
+class CorpusUNIMORPH(CorpusCSV):
+    def _process_line(self, line: dict, params: dict) -> tuple:
+        split_y = line["label"].split(";")
+        pos, tag = split_y[0], ";".join(split_y[1:])
+        return ((line["text"], pos), tag)
 
 
 class CorpusSubDir(Corpus):
