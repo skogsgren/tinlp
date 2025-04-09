@@ -1,0 +1,243 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage{mlmodern}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{tcolorbox}
+\usepackage[maxbibnames=10,sorting=nty,style=authoryear]{biblatex}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage[margin=0.8in]{geometry}
+\usepackage{titlesec}
+\titleformat{\section}{\normalsize\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\renewenvironment{abstract}{
+	\begin{center}\bfseries\abstractname\end{center}
+	\begin{quote}}
+	{\end{quote}}
+
+\addbibresource{bibliography.bib}
+
+\title{
+	The Good, The Bad, and The Features: \\
+	Comparing Affix-Based and BPE-Based Feature Design for
+	Morphological Tagging
+}
+\author{
+    Gustaf Gren \\
+	\href{mailto:gustaf.gren@ling.su.se}{\texttt{gustaf.gren@ling.su.se}}
+}
+\date{\today}
+
+\twocolumn
+\setlength{\columnsep}{0.33in}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+This study pits two classifiers --- multinomial logistic regression and a
+perceptron --- against each other for morphological tagging, each armed with a
+different set of features: affixes and byte pair encoding (BPE). While neither
+model has the sleight of hand to shift the outcome, BPE shows to either perform
+the same, or worse, across languages and metrics.
+
+\end{abstract}
+
+\section{Background and Motivation}
+
+Morphology studies the structure and formation of words, including roots,
+prefixes, suffixes, and inflections. Computational morphology uses
+computational methods to analyze these aspects, such as \textit{Morfessor}
+\parencite{smit2014} which automatically segments text. Morphological tagging
+automatically labels words with their morphological tags, but the impact of
+model choice on performance remains underexplored. \textcite{haley2023}
+compared regression and perceptrons for inflection/derivation classification,
+both reaching 90\% accuracy.
+
+Recent research suggests BPE subwords align with morphological features.
+\textcite{vasques2023} linked early BPE merges to morphological typology, while
+\textcite{saleva2021} found no significant difference between BPE and
+morphology-based segmentation in low-resource translation.
+
+This article examines how model choice (multinomial logistic
+regression/perceptron) and feature choice (affix-based vs. BPE-based) impact
+morphological tagging performance on three languages from the UniMorph dataset
+\parencite{batsuren2022}: Welsh (fusional), Chichimeca Jonaz (tonal), and
+Basque (agglutinative).
+
+\section{Methodology}
+
+The open source Python library \texttt{TiNLP} was used for these experiments,
+with reproducible scripts here: \url{https://github.com/skogsgren/tinlp}
+
+\subsection{Data}
+
+UniMorph data has three columns: lemma, inflected word, and part-of-speech \&
+morphological tag. This article only uses the second and third columns,
+predicting only the morphological tag (e.g., \texttt{DEF;NOM;SG}), with
+\texttt{N} riding shotgun as an extra feature. Each data was randomly sampled
+to a 80/20 train/test split.
+
+\subsection{Models \& Evaluation}
+
+A perceptron is a simple neural network using a linear classifier on input
+features. We use two feature functions: one uses affixes ($1 \rightarrow n$
+characters from a word's start/end), and the other subwords from a low-vocab
+BPE model (see appendix \ref{sec:feat_fn} for pseudocode). The multinomial
+logistic regression model architecture follows \textcite[Ch.5]{jm3}.
+
+Models are trained for 3 epochs per language with affix length 5 and BPE
+vocab size 500 respectively. Evaluation includes accuracy and macro F1-score,
+followed by paired bootstrap tests \parencite{tibshirani1993} for each model
+and metric, with 5000 total samples each.
+
+\section{Results}
+
+Except for Basque, model choice did not significantly affect morphological
+tagging performance on either metric or feature function (see tables
+\ref{tab:affix-accuracy-mc}-\ref{tab:bpe-f1-mc}). Since the model choice was
+not statistically significant, the perceptron was selected for comparison
+between affix-based and BPE-based features due to its faster training and
+inference. Results show that the perceptron trained on affix-based features
+outperforms the model trained on low-vocab BPE-based features in most
+languages, except Welsh, where both models had identical performance. Full
+metrics are presented in table \ref{tab:feat-accuracy}-\ref{tab:feat-f1}. All
+tables are rounded to two decimals.
+
+\begin{table*}
+\centering
+\begin{tabular}{lrrrrc}
+\textbf{Language} & \textbf{Affix Accuracy} & \textbf{BPE Accuracy} & $\delta$ & $p$ & \textbf{95\% CI}\\
+\hline
+Welsh & 0.73 & 0.73 & 0.00 & 0.642 & $\begin{bmatrix}-0.023 & 0.017\end{bmatrix}$ \\
+Chichimeca & 0.52 & 0.43 & 0.09 & <0.001 & $\begin{bmatrix}0.066 & 0.105\end{bmatrix}$ \\
+Basque & 0.30 & 0.12 & 0.17 & <0.001 & $\begin{bmatrix}0.151 & 0.191\end{bmatrix}$ \\
+\end{tabular}
+\caption{Accuracy morphological tagging performance with paired bootstrap test ($H_0$: no difference between affix and BPE-based features)}
+\label{tab:feat-accuracy}
+\end{table*}
+
+\begin{table*}
+\centering
+\begin{tabular}{lrrrrc}
+\textbf{Language} & \textbf{Affix F1} & \textbf{BPE F1} & $\delta$ & $p$ & \textbf{95\% CI}\\
+\hline
+Welsh & 0.71 & 0.71 & 0.00 & 0.369 & $\begin{bmatrix}-0.012 & 0.022\end{bmatrix}$ \\
+Chichimeca & 0.50 & 0.40 & 0.10 & <0.001 & $\begin{bmatrix}0.085 & 0.12\end{bmatrix}$ \\
+Basque & 0.22 & 0.08 & 0.14 & <0.001 & $\begin{bmatrix}0.118 & 0.146\end{bmatrix}$ \\
+\end{tabular}
+\caption{F1 morphological tagging performance with paired bootstrap test ($H_0$: no difference between affix and BPE-based features)}
+\label{tab:feat-f1}
+\end{table*}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrc}
+\textbf{Language} & $\delta$ & $p$ & \textbf{95\% CI}\\
+\hline
+Welsh & 0.00235 & 0.335 & $\begin{bmatrix}-0.008 & 0.013\end{bmatrix}$ \\
+Chichimeca & -0.01422 & 0.987 & $\begin{bmatrix}-0.027 & -0.001\end{bmatrix}$ \\
+Basque & 0.04333 & <0.001 & $\begin{bmatrix}0.027 & 0.06\end{bmatrix}$ \\
+\end{tabular}
+\caption{1-tailed bootstrap test. $H_0$: using affix features and accuracy for metrics, is the multinomial logistic regression model significantly better than the perceptron model?}
+\label{tab:affix-accuracy-mc}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrc}
+\textbf{Language} & $\delta$ & $p$ & \textbf{95\% CI}\\
+\hline
+Welsh & 0.00164 & 0.358 & $\begin{bmatrix}-0.007 & 0.01\end{bmatrix}$ \\
+Chichimeca & -0.02226 & 1.0 & $\begin{bmatrix}-0.035 & -0.01\end{bmatrix}$ \\
+Basque & 0.03484 & <0.001 & $\begin{bmatrix}0.022 & 0.047\end{bmatrix}$ \\
+\end{tabular}
+\caption{1-tailed bootstrap test. $H_0$: using affix features and f1 for metrics, is the multinomial logistic regression model significantly better than the perceptron model?}
+\label{tab:affix-f1-mc}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrc}
+\textbf{Language} & $\delta$ & $p$ & \textbf{95\% CI}\\
+\hline
+Welsh & 0.00846 & 0.116 & $\begin{bmatrix}-0.005 & 0.022\end{bmatrix}$ \\
+Chichimeca & -0.01587 & 0.98 & $\begin{bmatrix}-0.031 & -0.001\end{bmatrix}$ \\
+Basque & 0.03281 & <0.001 & $\begin{bmatrix}0.019 & 0.047\end{bmatrix}$ \\
+\end{tabular}
+\caption{1-tailed bootstrap test. $H_0$: using affix features and accuracy for metrics, is the multinomial logistic regression model significantly better than the perceptron model?}
+\label{tab:bpe-accuracy-mc}
+\end{table}
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrc}
+\textbf{Language} & $\delta$ & $p$ & \textbf{95\% CI}\\
+\hline
+Welsh & 0.00043 & 0.493 & $\begin{bmatrix}-0.013 & 0.015\end{bmatrix}$ \\
+Chichimeca & -0.01458 & 0.973 & $\begin{bmatrix}-0.029 & 0.0\end{bmatrix}$ \\
+Basque & 0.02139 & <0.001 & $\begin{bmatrix}0.011 & 0.031\end{bmatrix}$ \\
+\end{tabular}
+\caption{1-tailed bootstrap test. $H_0$: using affix features and f1 for metrics, is the multinomial logistic regression model significantly better than the perceptron model?}
+\label{tab:bpe-f1-mc}
+\end{table}
+
+\section{Discussion and Conclusion}
+
+Models trained on BPE-based features either performed the same or worse than
+those with affix-based features. This may be because BPE, as suggested by
+\textcite{mager2022}, does not capture morphology as effectively as
+linguistically-based features. It could also be due to improper tuning of BPE
+parameters, as we see variation in BPE performance across different languages.
+For example, in Welsh, BPE performed the same as the affix model. Notably,
+Basque is the only language where a multinomial logistic regression model
+outperformed a perceptron. Future research could explore why this occurs and
+how tuning BPE parameters like vocab size affects morphological tagging
+performance.
+
+\printbibliography
+
+\appendix
+
+\section{Feature Functions}\label{sec:feat_fn}
+
+This section contains pseudocode for the feature functions used. The actual
+code for the feature functions was written in Python, and is available on the
+GitHub repo.
+
+\begin{algorithm}
+\caption{Yield features based on affixes}
+\label{alg:affix}
+\begin{algorithmic}
+\Procedure{YieldAffixFeatures}{word, pos}
+    \For{$i = 1$ \textbf{to} $5$}
+        \State \textbf{yield} $word[{:}i]$
+        \State \textbf{yield} $word[-i{:}]$
+    \EndFor
+    \State \textbf{yield} $pos$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Yield features based on BPE}
+\label{alg:bpe}
+\begin{algorithmic}
+\Procedure{YieldBPEFeatures}{word, pos}
+    \State $bpe\_subwords \gets \text{tokenize}(word)$
+    \ForAll{$subword \in bpe\_subwords$}
+        \State \textbf{yield} $subword$
+    \EndFor
+    \State \textbf{yield} $pos$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+\end{document}

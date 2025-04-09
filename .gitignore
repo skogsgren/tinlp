@@ -3,7 +3,11 @@
 __pycache__
 mini-papers/*
 !mini-papers/*.tex
+!mini-papers/*.txt
 !mini-papers/*.bib
+!mini-papers/*.pdf
+!mini-papers/scripts/
+!mini-papers/scripts/data
 tests_labs/data
 pdf
 repo.tar.xz

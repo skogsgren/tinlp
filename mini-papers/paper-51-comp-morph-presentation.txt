@@ -1,0 +1,115 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~░▀█▀░█░█░█▀▀░░░█▀▀░█▀█░█▀█░█▀▄░░░░░░░▀█▀░█░█░█▀▀░░░█▀▄░█▀█░█▀▄░░░░~
+~░░█░░█▀█░█▀▀░░░█░█░█░█░█░█░█░█░░░░░░░░█░░█▀█░█▀▀░░░█▀▄░█▀█░█░█░░░░~
+~░░▀░░▀░▀░▀▀▀░░░▀▀▀░▀▀▀░▀▀▀░▀▀░░▄▀░░░░░▀░░▀░▀░▀▀▀░░░▀▀░░▀░▀░▀▀░░▄▀░~
+~░█▀█░█▀█░█▀▄░░░▀█▀░█░█░█▀▀░░░█▀▀░█▀▀░█▀█░▀█▀░█░█░█▀▄░█▀▀░█▀▀      ~
+~░█▀█░█░█░█░█░░░░█░░█▀█░█▀▀░░░█▀▀░█▀▀░█▀█░░█░░█░█░█▀▄░█▀▀░▀▀█      ~
+~░▀░▀░▀░▀░▀▀░░░░░▀░░▀░▀░▀▀▀░░░▀░░░▀▀▀░▀░▀░░▀░░▀▀▀░▀░▀░▀▀▀░▀▀▀      ~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          +--------------------------------------------------------+
+	      | Comparing Affix-Based and BPE-Based Feature Design for |
+	      | Morphological Tagging                                  |
+          +--------------------------------------------------------+
+         o
+        o
+ |\/\/\/|
+ |      |
+ |      |
+ | (o)(o)
+ C      _)
+  | ,___|
+  |   /
+ /____\
+/      \
++------------------------------------------------------------------+
+| * Comparison of two classifiers: multinomial logistic regression |
+|   vs. perceptron.                                                |
+| * TASK: morphological tagging for three morphologically distinct |
+|   languages:                                                     |
+|     > Welsh       (fusional)                                     |
+|     > Basque      (agglutinative)                                |
+|     > Chichimeca  (tonal)                                        |
+| * Each using different features:                                 |
+|     > Affixes                                                    |
+|     > Byte Pair Encoding (BPE)                                   |
+| * OUTCOME:                                                       |
+|     > Neither model clearly outperforms the other                |
+|     > BPE performs same or worse across languages and metrics    |
++------------------------------------------------------------------+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~░█▀▄░█▀▀░█▀▀░█░█░█░░░▀█▀░█▀▀~
+~░█▀▄░█▀▀░▀▀█░█░█░█░░░░█░░▀▀█~
+~░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++------------------------------------------------------------------+
+| * Model choice did not significantly affect morphological        |
+|   tagging performance (except for Basque).                       |
+| * Perceptron selected for comparison due to faster training and  |
+|   inference.                                                     |
+|                                                                  |
+| * RESULTS: perceptron with affix-based features outperforms      |
+|   BPE-based features in most languages.                          |
+| * EXCEPTION: Welsh, where both models performed equally.         |
++------------------------------------------------------------------+
+
++-------------------------------------------------------------------+
+| Language     Affix Acc  BPE Acc  Δ     p       95% CI             |
++-------------------------------------------------------------------+
+| Welsh        0.73       0.73    0.00  0.642   [-0.023, 0.017]     |
+| Chichimeca   0.52       0.43    0.09  <0.001  [0.066, 0.105]      |
+| Basque       0.30       0.12    0.17  <0.001  [0.151, 0.191]      |
+|                                                                   |
+|> Accuracy morphological tagging performance with paired bootstrap | 
+|> test                                                             |
+|> ($H_0$: no difference between affix and BPE-based features       |
++-------------------------------------------------------------------+
+
++-------------------------------------------------------------------+
+| Language     Affix F1   BPE F1   Δ     p       95% CI             |
++-------------------------------------------------------------------+
+| Welsh        0.71       0.71     0.00  0.369   [-0.012, 0.022]    |
+| Chichimeca   0.50       0.40     0.10  <0.001  [0.085, 0.12]      |
+| Basque       0.22       0.08     0.14  <0.001  [0.118, 0.146]     |
+|> F1 morphological tagging performance with paired bootstrap test  |
+|> ($H_0$: no difference between affix and BPE-based features)      |
++-------------------------------------------------------------------+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~░█▀▄░█▀█░█▀█░▀█▀░█▀▀░▀█▀░█▀▄░█▀█░█▀█░░░▀█▀░█▀█░█▀▄░█░░░█▀▀░█▀▀~
+~░█▀▄░█░█░█░█░░█░░▀▀█░░█░░█▀▄░█▀█░█▀▀░░░░█░░█▀█░█▀▄░█░░░█▀▀░▀▀█~
+~░▀▀░░▀▀▀░▀▀▀░░▀░░▀▀▀░░▀░░▀░▀░▀░▀░▀░░░░░░▀░░▀░▀░▀▀░░▀▀▀░▀▀▀░▀▀▀~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Language     Δ        p       95% CI
+------------------------------------------
+Welsh        0.00235  0.335   [-0.008, 0.013]
+Chichimeca  -0.01422  0.987   [-0.027, -0.001]
+Basque       0.04333  <0.001  [0.027, 0.06]
+> Affix; Accuracy
+> $H_0$: Is multinomial logistic regression better than perceptron?
+
+Language     Δ        p       95% CI
+------------------------------------------
+Welsh        0.00164  0.358   [-0.007, 0.01]
+Chichimeca  -0.02226  1.0     [-0.035, -0.01]
+Basque       0.03484  <0.001  [0.022, 0.047]
+> Affix; F1 
+> $H_0$: Is multinomial logistic regression better than perceptron?
+
+Language     Δ        p       95% CI
+------------------------------------------
+Welsh        0.00846  0.116   [-0.005, 0.022]
+Chichimeca  -0.01587  0.98    [-0.031, -0.001]
+Basque       0.03281  <0.001  [0.019, 0.047]
+> BPE; Accuracy
+> $H_0$: Is multinomial logistic regression better than perceptron?
+
+Language     Δ        p       95% CI
+------------------------------------------
+Welsh        0.00043  0.493   [-0.013, 0.015]
+Chichimeca  -0.01458  0.973   [-0.029, 0.0]
+Basque       0.02139  <0.001  [0.011, 0.031]
+> BPE; F1
+> $H_0$: Is multinomial logistic regression better than perceptron?
