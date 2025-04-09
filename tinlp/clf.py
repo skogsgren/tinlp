@@ -29,13 +29,18 @@ class Classifier:
     def fit(self, X: list, y: list):
         raise NotImplementedError
 
-    def eval(self, X: list, y: list) -> float:
+    def eval(self, X: list, y: list, cached_pred: list = []) -> float:
         # for token level we flatten our y/yhat arrays
         if self.params.get("eval_level", "sequence") == "token":
-            y_hat = list(chain.from_iterable(self.predict(x) for x in X))
             y = list(chain.from_iterable(y))
+
+        if cached_pred:
+            y_hat = cached_pred
         else:
-            y_hat = [self.predict(x) for x in X]
+            if self.params.get("eval_level", "sequence") == "token":
+                y_hat = list(chain.from_iterable(self.predict(x) for x in X))
+            else:
+                y_hat = [self.predict(x) for x in X]
         return Metric(self.metric)(y=y, y_hat=y_hat)
 
 
