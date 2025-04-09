@@ -98,7 +98,7 @@ class BPETokenizer(Tokenizer):
         if k < self.n_lines:
             if self.seed:
                 random.seed(self.seed)
-            sample_idx = set(random.sample(range(self.n_lines), k=k))
+            sample_idx = sorted(list(set(random.sample(range(self.n_lines), k=k))))
             data = [
                 [c for c in w] + ["_"]
                 for i, x in enumerate(CorpusPlain(self.data))
