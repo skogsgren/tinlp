@@ -176,5 +176,5 @@ def part2():
         json.dump(metrics, f)
 
 
-# part1()
+part1()
 part2()
