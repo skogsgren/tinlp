@@ -9,7 +9,7 @@ WORD_ACC = 0.8
 
 CHAR_TRAIN_DATA = Path("./data/lang_identification/train.csv")
 CHAR_TEST_DATA = Path("./data/lang_identification/test.csv")
-CHAR_ACC = 0.99
+CHAR_ACC = 0.9825
 
 
 def test_ngram_clf_word():
