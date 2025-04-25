@@ -31,6 +31,13 @@ class CharTokenizer(Tokenizer):
         return [x for x in inp if x != " "]
 
 
+class WSTokenizer(Tokenizer):
+    """tokenize on spaces"""
+
+    def tokenize(self, inp: str) -> list[str]:
+        return inp.split()
+
+
 class BPETokenizer(Tokenizer):
     def __init__(
         self,
@@ -151,6 +158,10 @@ class BPETokenizer(Tokenizer):
 
 
 def load_tokenizer(name: str | tuple) -> Tokenizer:
+    if name == "char":
+        return CharTokenizer()
+    if name == "whitespace":
+        return WSTokenizer()
     if isinstance(name, tuple):
         # NOTE: not sure what I did here
         # NOTE: possibly better just to use declarations instead, i.e.
