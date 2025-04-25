@@ -1,8 +1,14 @@
+import gzip
 import random
 from abc import abstractmethod
+from collections import Counter
 from csv import DictReader
 from pathlib import Path
 from typing import Iterable
+
+from tinygrad import Tensor
+
+from .text import get_ngrams
 
 
 class Corpus:
@@ -26,6 +32,50 @@ class Corpus:
             X = [(x,) for x in X]
             y = [(y,) for y in y]
         return X, y
+
+    def get_ngram_tensors(
+        self,
+        tokenizer,
+        n: int,
+        min_occ: int = 0,
+    ) -> tuple[Tensor, Tensor, dict]:
+        # we first define our special tokens
+        pad = 0
+        unk = 1
+        eos = 2
+        # tokenize each sequence in inp according to self.tokenization
+        print("tokenizing sequences")
+        data = [tokenizer.tokenize(seq) for seq in self.data]
+        # count occurences for each word in tokenized sequences
+        print("counting occurences")
+        word_count = Counter()
+        for seq in data:
+            for word in seq:
+                word_count[word] += 1
+        # initialize vocab along with special tokens
+        self.vocab = {"<pad>": pad, "<unk>": unk, "<eos>": eos}
+        # create vocab mapping if occurence > min_occ
+        print("creating vocab mappings")
+        for word, c in word_count.items():
+            if c < min_occ:
+                continue
+            self.vocab[word] = len(self.vocab)
+        # create mapping vectors for each sequence
+        print("creating mapping vectors")
+        # since <unk> == 1
+        data = [[self.vocab.get(word, unk) for word in seq] for seq in data]
+        # convert mapping vectors to ngram tuples (e.g. if n=3 then ([1, 2, 3], 4))
+        X_list = []
+        y_list = []
+        for seq in data:
+            for ngram in get_ngrams(seq, pad=pad, eos=eos, n=n + 1):
+                if ngram[-1] == unk:
+                    continue
+                X_list.append(ngram[:-1])
+                y_list.append(ngram[-1])
+        # convert mapped ngram vectors to Tensors
+        print("converting mapping vectors to tensors")
+        return Tensor(X_list), Tensor(y_list), self.vocab
 
     def train_test_split(
         self, test_size: float = 0.2, seed=None, unsqueeze: bool = False
@@ -115,6 +165,11 @@ class CorpusCONLL2003(Corpus):
 class CorpusPlain(Corpus):
     def _process(self, data: Path, **params) -> Iterable[str]:
         """returns iterator for file without labels"""
-        with open(data) as f:
-            for line in f:
-                yield line.strip()
+        if data.suffixes[-1] == ".gz":
+            with gzip.open(data, "rt") as f:
+                for line in f:
+                    yield line.strip()
+        else:
+            with open(data) as f:
+                for line in f:
+                    yield line.strip()
