@@ -4,6 +4,8 @@ version = "0.0.1"
 authors = [{name="Gustaf Gren", email="gustaf.gren@ling.su.se"},]
 description = "Tiny NLP library"
 dependencies = [
+    "tqdm",
+    "tinygrad",
     "numpy",
 ]
 
