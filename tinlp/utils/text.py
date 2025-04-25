@@ -1,6 +1,16 @@
 from pathlib import Path
 import gzip
+from typing import Iterable
 import numpy as np
+
+
+def get_ngrams(x: Iterable, pad: str | int, eos: str | int, n: int):
+    """given an Iterable returns sliding window ngram iterable"""
+    s = (pad,) * max((n - 1), 1) + tuple(x) + (eos,)
+    for i in range(len(s) - n + 1):
+        yield (s[i : i + n])
+
+
 def read_vector_file(filename: Path) -> Iterable[tuple[str, np.ndarray]]:
     """helper function to read a vector file"""
     with (
