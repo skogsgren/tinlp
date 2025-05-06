@@ -1,83 +1,97 @@
 import tempfile
 from pathlib import Path
 
-from tinlp.lm import NGramNN
+import pytest
+import tinlp
+from tinlp.nn import NGram, get_ngram_tensors
 from tinlp.utils.data import CorpusPlain
-from tinlp.utils.tokenizer import load_tokenizer
 from tinlp.utils.text import search_vectors
+from tinlp.utils.tokenizer import load_tokenizer
 
-OUT = Path(tempfile.NamedTemporaryFile(delete=False, suffix=".vector.gz").name)
-TEST_DATA = Path("./data/bengio/english-train.txt.gz")
+VECTOR_OUT_TMP = Path(
+    tempfile.NamedTemporaryFile(delete=False, suffix=".vector.gz").name
+)
+TRAIN_DATA = Path("./data/bengio/english-train.txt.gz")
+TEST_DATA = Path("./data/bengio/english-test-1k.txt.gz")
 NGRAM_SIZE = 4
 SEED = 42
+N_EPOCHS = 2
+
+DEVICE = "cuda"
 
 TOKENIZER = "regex"
 PARAMS = {
     "batch_size": 1024,
-    "hidden_size": 80,
+    "hid_size": 80,
     "ngram_size": NGRAM_SIZE,
-    "embedding_size": 100,
-    "gradient_clipping_value": 1.0,
-    "learning_rate": 0.001,
+    "emb_size": 100,
+    "grad_clip": 1.0,
+    "lr": 0.001,
     "seed": SEED,
-    "show_progress": True,
+    "pbar": True,
+    "device": DEVICE,
 }
 
+print(f"{VECTOR_OUT_TMP=}")
 
-def test_nn_ngram_loss():
-    X, y, vocab = CorpusPlain(TEST_DATA).get_ngram_tensors(
+
+@pytest.mark.skipif(not (hasattr(tinlp, "nn")), reason="requires nn plugins.")
+def test_nn_ngram():
+    import torch
+
+    X, y, vocab = get_ngram_tensors(
+        corpus=CorpusPlain(TRAIN_DATA),
         tokenizer=load_tokenizer(TOKENIZER),
         n=NGRAM_SIZE,
         min_occ=5,
+        device=DEVICE,
     )
-    print(f"{len(vocab)=}")
-    print(f"{X.shape=}")
-    print(f"{y.shape=}")
-    y_arr = y.numpy()
-    assert 1 not in y_arr  # i.e. unk token id
-    params = PARAMS
-    params["vocab_size"] = len(vocab)
-    batch_size = params["batch_size"]
-    params["steps"] = (X.shape[0] // params["batch_size"]) * 2  # two epochs
-    model = NGramNN(params)
-    score_before_training = model.eval(X, y)
-    loss_before_training = model(X[:batch_size]).cross_entropy(y[:batch_size]).item()
-    print(f"{loss_before_training=}")
-    model.fit(X, y)
-    loss_after_training = model(X[:batch_size]).cross_entropy(y[:batch_size]).item()
-    score_after_training = model.eval(X, y)
-    print(loss_before_training, loss_after_training)
-    print(score_before_training, score_after_training)
 
+    # inv_vocab = {v: k for k, v in vocab.items()}
+    # def tensor_to_tokens(x):
+    #     return [inv_vocab[n] for n in x.cpu().numpy()]
 
-def test_nn_ngram_vectors():
-    X, y, vocab = CorpusPlain(TEST_DATA).get_ngram_tensors(
+    # print("X[2]", X[2], tensor_to_tokens(X[2]))
+    # print("y[2]", y[2], inv_vocab[int(y[2].cpu())])
+    # exit(1)
+
+    # i.e. making sure unk token id is not in target arr
+    y_arr = y.cpu().numpy()
+    assert 1 not in y_arr
+
+    X_test, y_test, _ = get_ngram_tensors(
+        CorpusPlain(TEST_DATA),
         tokenizer=load_tokenizer(TOKENIZER),
         n=NGRAM_SIZE,
-        min_occ=5,
+        vocab=vocab,
+        device=DEVICE,
     )
+
     params = PARAMS
     params["vocab_size"] = len(vocab)
-    params["steps"] = (X.shape[0] // params["batch_size"]) * 2  # two epochs
-    model = NGramNN(params)
-    model.fit(X, y)
-    model.export_vectors(vocab, OUT)
+    params["steps"] = (X.shape[0] // params["batch_size"]) * N_EPOCHS
+    model = NGram(**params)
+    print(model)
 
-    top_k = search_vectors(OUT, "friday", k=15)
+    loss_before = torch.nn.functional.cross_entropy(model(X_test), y_test).item()
+    print(f"{loss_before=}")
+    # assert loss_before > 10.0
+
+    model.fit(X, y)
+    # to avoid CUDA overflow
+    X.detach()
+    y.detach()
+    del X
+    del y
+
+    loss_after = torch.nn.functional.cross_entropy(model(X_test), y_test).item()
+    # assert loss_after < 5.5
+    print(loss_before, loss_after)
+
+    print("exporting vectors")
+    model.export_vectors(vocab, VECTOR_OUT_TMP)
+    top_k = search_vectors(VECTOR_OUT_TMP, "friday", k=20)
     print(top_k)
 
 
-test_nn_ngram_loss()
-test_nn_ngram_vectors()
-
-""" QUESTIONS
-- how can I possible load in the entire thing into memory when it just crashes if I attempt to do so?
-    * even a small subset takes up 3.2GB
-    * since I'm using random sampling, what I could do is to train it "in
-      folds", meaning I split it in say ten folds, and then train each fold for 2 epochs.
-    * this is going to be very slow though, since I have to recreate the Tensor
-    for each fold, reading the file again, iterating over each line until I get
-    to the folds
-- why is the loss so different?
-- are my topk vectors supposed to look like that?
-"""
+test_nn_ngram()

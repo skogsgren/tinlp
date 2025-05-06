@@ -19,7 +19,7 @@ def test_perceptron_morphological_clf():
             "metric": "accuracy",
             "epochs": 3,
             "affix_len": 5,
-            "show_progress": True,
+            "show_progress": False,
         },
     )
     X, y = CorpusUNIMORPH(
@@ -47,7 +47,7 @@ def test_perceptron_seq_clf():
             "metric": "accuracy",
             "eval_level": "token",
             "epochs": 3,
-            "show_progress": True,
+            "show_progress": False,
         },
     )
     X, y = CorpusCONLL2003(CONLL2003_TRAIN).get_arrays()

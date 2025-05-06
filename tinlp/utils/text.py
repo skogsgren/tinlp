@@ -13,11 +13,9 @@ def get_ngrams(x: Iterable, pad: str | int, eos: str | int, n: int):
 
 def read_vector_file(filename: Path) -> Iterable[tuple[str, np.ndarray]]:
     """helper function to read a vector file"""
-    with (
-        gzip.open(filename, "rt")
-        if filename.suffixes[-1] == ".gz"
-        else open(filename) as f
-    ):
+    with gzip.open(filename, "rt") if filename.suffixes[-1] == ".gz" else open(
+        filename
+    ) as f:
         for line in f:
             split_line = line.strip().split()
             if len(split_line) < 5:
@@ -36,9 +34,9 @@ def search_vectors(vector_file: Path, query: str, k: int = 10) -> list:
     if query not in words:
         return []
     query_vec = vectors[words[query]]
-    query_norm = query_vec / np.linalg.norm(query_vec)
+    query_norm = query_vec / np.linalg.norm(query_vec, keepdims=True)
 
-    cos_sin_distance = 1 - (vectors_norm @ query_norm)
+    cos_sin_distance = 1 - (vectors_norm @ query_norm.T)
 
     top_k = np.argsort(cos_sin_distance)[:k]
     inverted_vocab = {v: k for k, v in words.items()}
