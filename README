@@ -17,8 +17,14 @@ FEATURES
 
 QUICK START
     Install it using pip:
-        pip3 install tinlp
+        git clone https://github.com/skogsgren/tinlp
+        cd tinlp
+        pip3 install .
     Then see some examples in the tests_generic folder.
+
+    If you want to use all classifiers install using
+        pip3 install .[nn]
+    Though this pulls in torch as a dependency.
 
 TESTS
     Testing is done using pytest, which is only installed if you
